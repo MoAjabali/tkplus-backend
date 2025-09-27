@@ -130,7 +130,3 @@ http://localhost:3000/api-docs
 - DELETE /api/tickets/:id → Delete ticket (admin)
 - POST /api/tickets/:id/reserve → Reserve ticket (user)
 - POST /api/tickets/:id/cancel → Cancel reservation (user)
-
-## License
-
-ISC
