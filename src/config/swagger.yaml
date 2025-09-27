@@ -1,0 +1,833 @@
+openapi: 3.0.0
+info:
+  title: Event Management API
+  description: API for managing events, activities, presenters, and tickets
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  
+  schemas:
+    User:
+      type: object
+      properties:
+        userID:
+          type: integer
+        userName:
+          type: string
+        userEmail:
+          type: string
+        userPhone:
+          type: string
+        userRole:
+          type: string
+          enum: [admin, user]
+        createdAt:
+          type: string
+          format: date-time
+    
+    Activity:
+      type: object
+      properties:
+        activityID:
+          type: integer
+        activityTitle:
+          type: string
+        activityDesc:
+          type: string
+        activityType:
+          type: string
+        activityDate:
+          type: string
+          format: date-time
+        activityLocation:
+          type: string
+        capacity:
+          type: integer
+        status:
+          type: string
+          enum: [open, closed, postponed]
+    
+    ActivityPresenter:
+      type: object
+      properties:
+        presenterID:
+          type: integer
+        activityID:
+          type: integer
+        presenterName:
+          type: string
+        presenterJob:
+          type: string
+    
+    Ticket:
+      type: object
+      properties:
+        ticketID:
+          type: integer
+        ticketName:
+          type: string
+        ticketDesc:
+          type: string
+        ticketNo:
+          type: string
+        price:
+          type: number
+          format: float
+        status:
+          type: string
+          enum: [available, reserved, cancelled]
+        userID:
+          type: integer
+        activityID:
+          type: integer
+
+paths:
+  /users/register:
+    post:
+      summary: Register a new user
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userName
+                - userEmail
+                - userPassword
+              properties:
+                userName:
+                  type: string
+                userEmail:
+                  type: string
+                userPhone:
+                  type: string
+                userPassword:
+                  type: string
+                userRole:
+                  type: string
+                  enum: [admin, user]
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  token:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+  
+  /users/login:
+    post:
+      summary: Login user
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userEmail
+                - userPassword
+              properties:
+                userEmail:
+                  type: string
+                userPassword:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  token:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+  
+  /users/profile:
+    get:
+      summary: Get user profile
+      tags:
+        - Users
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+  
+  /users/{id}:
+    put:
+      summary: Update user
+      tags:
+        - Users
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userName:
+                  type: string
+                userEmail:
+                  type: string
+                userPhone:
+                  type: string
+                userPassword:
+                  type: string
+                userRole:
+                  type: string
+                  enum: [admin, user]
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+    
+    delete:
+      summary: Delete user (admin only)
+      tags:
+        - Users
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: User deleted
+  
+  /users:
+    get:
+      summary: Get all users (admin only)
+      tags:
+        - Users
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  results:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      users:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/User'
+  
+  /activities:
+    post:
+      summary: Create new activity (admin only)
+      tags:
+        - Activities
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - activityTitle
+                - activityType
+                - activityDate
+                - activityLocation
+              properties:
+                activityTitle:
+                  type: string
+                activityDesc:
+                  type: string
+                activityType:
+                  type: string
+                activityDate:
+                  type: string
+                  format: date-time
+                activityLocation:
+                  type: string
+                capacity:
+                  type: integer
+                status:
+                  type: string
+                  enum: [open, closed, postponed]
+      responses:
+        '201':
+          description: Activity created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      activity:
+                        $ref: '#/components/schemas/Activity'
+    
+    get:
+      summary: Get all activities
+      tags:
+        - Activities
+      responses:
+        '200':
+          description: List of activities
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  results:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      activities:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Activity'
+  
+  /activities/{id}:
+    get:
+      summary: Get single activity
+      tags:
+        - Activities
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Activity details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      activity:
+                        $ref: '#/components/schemas/Activity'
+    
+    put:
+      summary: Update activity (admin only)
+      tags:
+        - Activities
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                activityTitle:
+                  type: string
+                activityDesc:
+                  type: string
+                activityType:
+                  type: string
+                activityDate:
+                  type: string
+                  format: date-time
+                activityLocation:
+                  type: string
+                capacity:
+                  type: integer
+                status:
+                  type: string
+                  enum: [open, closed, postponed]
+      responses:
+        '200':
+          description: Activity updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      activity:
+                        $ref: '#/components/schemas/Activity'
+    
+    delete:
+      summary: Delete activity (admin only)
+      tags:
+        - Activities
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Activity deleted
+  
+  /activities/search:
+    get:
+      summary: Search activities by type/date
+      tags:
+        - Activities
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  results:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      activities:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Activity'
+  
+  /activities/{activityID}/presenters:
+    post:
+      summary: Add presenter to activity (admin only)
+      tags:
+        - Presenters
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: activityID
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - presenterName
+              properties:
+                presenterName:
+                  type: string
+                presenterJob:
+                  type: string
+      responses:
+        '201':
+          description: Presenter added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      presenter:
+                        $ref: '#/components/schemas/ActivityPresenter'
+    
+    get:
+      summary: List presenters for activity
+      tags:
+        - Presenters
+      parameters:
+        - name: activityID
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of presenters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  results:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      presenters:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ActivityPresenter'
+  
+  /presenters/{id}:
+    put:
+      summary: Update presenter info (admin only)
+      tags:
+        - Presenters
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                presenterName:
+                  type: string
+                presenterJob:
+                  type: string
+      responses:
+        '200':
+          description: Presenter updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      presenter:
+                        $ref: '#/components/schemas/ActivityPresenter'
+    
+    delete:
+      summary: Remove presenter (admin only)
+      tags:
+        - Presenters
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Presenter removed
+  
+  /tickets:
+    post:
+      summary: Create ticket (admin only)
+      tags:
+        - Tickets
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ticketName
+                - activityID
+              properties:
+                ticketName:
+                  type: string
+                ticketDesc:
+                  type: string
+                price:
+                  type: number
+                  format: float
+                activityID:
+                  type: integer
+      responses:
+        '201':
+          description: Ticket created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      ticket:
+                        $ref: '#/components/schemas/Ticket'
+    
+    get:
+      summary: List all tickets
+      tags:
+        - Tickets
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of tickets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  results:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      tickets:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Ticket'
+  
+  /tickets/{id}:
+    get:
+      summary: Get ticket details
+      tags:
+        - Tickets
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Ticket details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      ticket:
+                        $ref: '#/components/schemas/Ticket'
+    
+    put:
+      summary: Update ticket info (admin only)
+      tags:
+        - Tickets
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ticketName:
+                  type: string
+                ticketDesc:
+                  type: string
+                price:
+                  type: number
+                  format: float
+                status:
+                  type: string
+                  enum: [available, reserved, cancelled]
+                activityID:
+                  type: integer
+      responses:
+        '200':
+          description: Ticket updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      ticket:
+                        $ref: '#/components/schemas/Ticket'
+    
+    delete:
+      summary: Delete ticket (admin only)
+      tags:
+        - Tickets
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Ticket deleted
+  
+  /tickets/{id}/reserve:
+    post:
+      summary: Reserve ticket (user)
+      tags:
+        - Tickets
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Ticket reserved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      ticket:
+                        $ref: '#/components/schemas/Ticket'
+  
+  /tickets/{id}/cancel:
+    post:
+      summary: Cancel reservation (user)
+      tags:
+        - Tickets
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Reservation cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      ticket:
+                        $ref: '#/components/schemas/Ticket'
